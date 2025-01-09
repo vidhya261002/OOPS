@@ -9,7 +9,7 @@ protected:
    int operatingCost; // Cost per hour
 public:
    Equipment(string n, int eff, int cost) : name(n), efficiency(eff), operatingCost(cost) {}
-   virtual void optimize() = 0; // Virtual method to optimize equipment
+   virtual void optimize() = 0; // Pure virtual method to optimize equipment
    void display() {
        cout << "Equipment: " << name << ", Efficiency: " << efficiency << "%, Operating Cost: $" << operatingCost << " per hour" << endl;
    }
@@ -60,6 +60,43 @@ public:
        cout << "Time Required: " << timeRequired << " hours" << endl;
    }
 };
+// Process class to hold all steps
+class Process {
+private:
+   Step** steps;
+   int numSteps;
+public:
+   Process(int num) : numSteps(num) {
+       steps = new Step*[numSteps];
+   }
+   void addStep(int index, Step* step) {
+       steps[index] = step;
+   }
+   void performAllSteps() {
+       cout << "\nStarting manufacturing process...\n";
+       for (int i = 0; i < numSteps; ++i) {
+           steps[i]->perform();
+       }
+   }
+   void optimizeEquipment() {
+       cout << "\nOptimizing manufacturing process...\n";
+       for (int i = 0; i < numSteps; ++i) {
+           steps[i]->equipment->optimize();
+       }
+   }
+   void performAllStepsAfterOptimization() {
+       cout << "\nPerforming steps after optimization...\n";
+       for (int i = 0; i < numSteps; ++i) {
+           steps[i]->perform();
+       }
+   }
+   ~Process() {
+       for (int i = 0; i < numSteps; ++i) {
+           delete steps[i];
+       }
+       delete[] steps;
+   }
+};
 int main() {
    // Input number of equipment
    int numEquipment;
@@ -104,7 +141,7 @@ int main() {
    int numSteps;
    cout << "Enter the number of steps in the process: ";
    cin >> numSteps;
-   Step* steps[10]; // Array to hold steps
+   Process process(numSteps); // Create Process object to hold all steps
    for (int i = 0; i < numSteps; ++i) {
        string description;
        int time;
@@ -117,6 +154,7 @@ int main() {
        // Select equipment for this step
        cout << "Select equipment for this step: " << endl;
        for (int j = 0; j < numEquipment; ++j) {
+           cout << j + 1 << ": ";
            equipments[j]->display();
        }
        cout << "Enter the number corresponding to the equipment: ";
@@ -124,28 +162,22 @@ int main() {
        // Select worker for this step
        cout << "Select worker for this step: " << endl;
        for (int j = 0; j < numWorkers; ++j) {
+           cout << j + 1 << ": ";
            workers[j]->display();
        }
        cout << "Enter the number corresponding to the worker: ";
        cin >> wrkIndex;
-       steps[i] = new Step(description, time, equipments[eqIndex - 1], workers[wrkIndex - 1]);
+       process.addStep(i, new Step(description, time, equipments[eqIndex - 1], workers[wrkIndex - 1]));
    }
-   // Perform the manufacturing process
-   cout << "\nStarting manufacturing process...\n";
-   for (int i = 0; i < numSteps; ++i) {
-       steps[i]->perform();
-   }
- 
-   // Optimize the process
-   cout << "\nOptimizing manufacturing process...\n";
+   process.performAllSteps();
+   process.optimizeEquipment();
+   process.performAllStepsAfterOptimization();
+   // Clean up dynamically allocated equipment and workers
    for (int i = 0; i < numEquipment; ++i) {
-       equipments[i]->optimize();
+       delete equipments[i];
    }
-
-   // Perform steps again after optimization
-   cout << "\nPerforming steps after optimization...\n";
-   for (int i = 0; i < numSteps; ++i) {
-       steps[i]->perform();
+   for (int i = 0; i < numWorkers; ++i) {
+       delete workers[i];
    }
    return 0;
 }
